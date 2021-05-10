@@ -131,7 +131,7 @@ class tenLocale {
       return str;
     }
     if (typ === 'object'){
-      if(Array.isArray(type)) {
+      if(Array.isArray(str)) {
         for (let i = 0; i < str.length; i++){
           str[i] = this._replace(str[i]);
         }
