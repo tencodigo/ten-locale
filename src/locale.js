@@ -62,7 +62,11 @@ class tenLocale {
     return tenLocale.instance._defaults;
   }
 
-  get(name,def, noReplace) {
+  get(name,def) {
+    return this._get(name, def);
+  }
+
+  _get(name,def, noReplace) {
     let value = _get(tenLocale.instance.locale,name,def);
     if(noReplace) return value;
     return this._replace(value);
@@ -119,7 +123,7 @@ class tenLocale {
         let name = key.replace(/[{}]/g, '');
         if (name === undefined || name === '') continue;
 
-        let value = this.get(name,null,true);
+        let value = this._get(name,null,true);
         if (value === undefined) continue;
         let re = new RegExp('\\{' + name + '\\}', 'g');
         str = str.replace(re, value);
