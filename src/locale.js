@@ -64,6 +64,7 @@ class tenLocale {
 
   get(name,def, noReplace) {
     let value = _get(tenLocale.instance.locale,name,def);
+    if(noReplace) return value;
     return this._replace(value);
   }
 
