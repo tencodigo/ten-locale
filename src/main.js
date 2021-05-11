@@ -17,8 +17,8 @@ export default {
     __locale.setup(options, isDefault);
 
     Vue.directive('locale-text', {
-      inserted: function (el,binding) {
-        let text = __getText(el,binding,Vue.$l.text,el.innerText);
+      mounted: function (el,binding) {
+        let text = __getText(el,binding,el.innerText);
         if(text) {
           el.innerText = text;
         }
@@ -26,8 +26,8 @@ export default {
     });
 
     Vue.directive('locale-title', {
-      inserted: function (el,binding) {
-        let text = __getText(el,binding,Vue.$l.text,el.title);
+      mounted: function (el,binding) {
+        let text = __getText(el,binding,el.title);
         if(text) {
           el.title = text;
         }
@@ -35,8 +35,8 @@ export default {
     });
 
     Vue.directive('locale-placeholder', {
-      inserted: function (el,binding) {
-        let text = __getText(el,binding,Vue.$l.text,el.placeholder);
+      mounted: function (el,binding) {
+        let text = __getText(el,binding,el.placeholder);
         if(text) {
           el.placeholder = text;
         }
