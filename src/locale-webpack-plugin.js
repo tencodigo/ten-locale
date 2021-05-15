@@ -1,11 +1,37 @@
-function mergeOptions(a, b) {
+const fs = require("fs");
+const path = require("path");
+const templateRegex = /(<template(\s|\S)*?<\/template>)/g;
+const localeEx = /(<.*\sv-locale-(text|placeholder|title)\s?=\s?\"\'.*'">)(.*)(<\/.*>)/g;
+
+function getTemplates(directory, files)
+{
+  files = files || [];
+  const filesInDirectory = fs.readdirSync(directory);
+  for (const file of filesInDirectory) {
+    const absolute = path.join(directory, file);
+    if (fs.statSync(absolute).isDirectory()) {
+      getTemplates(absolute,files);
+    } else {
+      if(absolute.indexOf('.git')>0) continue;
+      let ext = path.extname(absolute).toLocaleLowerCase();
+      if(ext!=='.html' && ext!==".vue") continue;
+      let contents = fs.readFileSync(absolute, 'utf8');
+
+      if(!contents.match(templateRegex)) continue;
+      files.push(absolute);
+    }
+  }
+  return files;
+}
+
+function mergeOptions(a, b)
+{
   if (!b) return a;
   Object.keys(b).forEach((key) => {
     a[key] = b[key];
   });
   return a;
 }
-
 class LocaleWebPackPlugin {
   constructor(options)
   {
@@ -17,6 +43,14 @@ class LocaleWebPackPlugin {
 
   apply(compiler) {
     console.log('before ---- ');
+
+    if(!this.options.locale && !fs.existsSync(this.options.locale))
+      throw "locale option must be specified and point to a valid file";
+
+    let locale = require(this.options.locale);
+
+    console.log(getTemplates(process.cwd()));
+
     compiler.hooks.done.tap('LocaleWebPackPlugin', compilation => {
       console.log('Touch the run hook asynchronously. ');
     });
