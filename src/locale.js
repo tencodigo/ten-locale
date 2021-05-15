@@ -74,6 +74,9 @@ class tenLocale {
 
   setup(options, isDefault) {
     if(options) {
+      if(options["~locale"]) {
+        this.setup({"locale":options["~locale"]});
+      }
       if(options.locale) {
         Object.keys(options.locale).forEach((key)=> {
           if(key==='default') {
@@ -99,7 +102,7 @@ class tenLocale {
     } else {
       _assign(this._locale,localeStrings);
     }
-    _assign(this._locales[localeCode],_clone(localeStrings));
+    _merge(this._locales[localeCode],_clone(localeStrings));
   }
 
   changeLocale(localeCode) {
