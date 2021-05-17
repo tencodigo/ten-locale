@@ -3,14 +3,14 @@ const path = require("path");
 const templateRegex = /(<template(\s|\S)*?<\/template>)/g;
 const localeEx = /(<.*\sv-locale-(text|placeholder|title)\s?=\s?\"\'.*'">)(.*)(<\/.*>)/g;
 
-function getTemplates(directory, files)
+function getTemplates(directory, files, locale)
 {
   files = files || [];
   const filesInDirectory = fs.readdirSync(directory);
   for (const file of filesInDirectory) {
     const absolute = path.join(directory, file);
     if (fs.statSync(absolute).isDirectory()) {
-      getTemplates(absolute,files);
+      getTemplates(absolute,files, locale);
     } else {
       if(absolute.indexOf('.git')>0) continue;
       let ext = path.extname(absolute).toLocaleLowerCase();
@@ -18,6 +18,11 @@ function getTemplates(directory, files)
       let contents = fs.readFileSync(absolute, 'utf8');
 
       if(!contents.match(templateRegex)) continue;
+      const matches = contents.match(localeEx);
+      if(!matches) continue;
+
+      console.log(matches);
+
       files.push(absolute);
     }
   }
@@ -49,7 +54,7 @@ class LocaleWebPackPlugin {
 
     let locale = require(this.options.locale);
 
-    console.log(getTemplates(process.cwd()));
+    console.log(getTemplates(process.cwd(), null, locale));
 
     compiler.hooks.done.tap('LocaleWebPackPlugin', compilation => {
       console.log('Touch the run hook asynchronously. ');
