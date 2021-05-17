@@ -1,7 +1,20 @@
-const _get =  require('lodash/get');
-const _merge =  require('lodash/merge');
-const _assign =  require('lodash/assign');
-const _clone =  require('lodash/cloneDeep');
+const _get = require('lodash/get');
+const _mergeDash = require('lodash/mergeWith');
+const _assign = require('lodash/assign');
+const _clone = require('lodash/cloneDeep');
+const _merge = function (dest,src,srcIndex,all) {
+  _mergeDash(dest,src,srcIndex,function (objValue, srcValue, key, object, source){
+    const lead = key.substr(0,1);
+    if(lead==='_' && !all) return undefined;
+    if(lead==='~') {
+      const key2=key.substr(1);
+      object[key2]=source[key];
+      return dest;
+    }
+    return undefined;
+  });
+};
+
 
 class tenLocale {
   //setup
