@@ -1,7 +1,18 @@
 const fs = require("fs");
 const path = require("path");
+
 const templateRegex = /(<template(\s|\S)*?<\/template>)/g;
-const localeEx = /(<.*\sv-locale-(text|placeholder|title)\s?=\s?\"\'.*'">)(.*)(<\/.*>)/g;
+const localeEx = /(<.*\sv-locale-(text|placeholder|title)\s?=\s?\"\'(.*)'".*?>)(.*)?<\/.*>?/g;
+const localeEx2 = /(<.*\sv-locale-(text|placeholder|title)\s?=\s?\"\'(.*)'".*?\/>)/g;
+const placeEx = /\splaceholder\s?=\s?"(.*)"/g;
+const titleEx = /\stitle\s?=\s?"(.*)"/g;
+const idEx = /\sid\s?=\s?"(.*)"/g;
+
+function execRegEx(str,rex) {
+  let matches = rex.exec(str);
+  if(matches===null) matches = rex.exec(str);
+  return matches;
+}
 
 function getTemplates(directory, files, locale)
 {
@@ -18,10 +29,38 @@ function getTemplates(directory, files, locale)
       let contents = fs.readFileSync(absolute, 'utf8');
 
       if(!contents.match(templateRegex)) continue;
-      const matches = contents.match(localeEx);
+      let matches = contents.match(localeEx);
+      const matches2 = contents.match(localeEx2);
+      if(!matches && matches2) matches=matches2;
+      else if(matches && matches2) matches = matches.concat(matches2);
+
       if(!matches) continue;
 
-      console.log(matches);
+      for(let i=0;i<matches.length;i++) {
+        let tag = execRegEx(matches[i],localeEx);
+        if(tag===null) tag = execRegEx(matches[i],localeEx2);
+        if(tag===null) { continue; }
+
+        let id = execRegEx(matches[i],idEx);
+        if(id) id=id[1];
+
+        let typ = tag[2];
+        let name = tag[3];
+        if (typ === 'text') {
+          let value = tag[4];
+          console.log({name: name, value: value});
+        } else if (typ === 'title') {
+          let title = execRegEx(matches[i],titleEx);
+          if(title) title=title[1];
+          console.log({name: name, value: title});
+        } else if (typ === 'placeholder') {
+          let place = execRegEx(matches[i],placeEx);
+          if(place) place=place[1];
+          console.log({name: name, value: place});
+        } else {
+          continue;
+        }
+      }
 
       files.push(absolute);
     }
