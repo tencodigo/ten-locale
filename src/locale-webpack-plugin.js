@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const _get = require('lodash/get');
 
 const templateRegex = /(<template(\s|\S)*?<\/template>)/g;
 const localeEx = /(<.*\sv-locale-(text|placeholder|title)\s?=\s?\"\'(.*)'".*?>)(.*)?<\/.*>?/g;
@@ -8,20 +9,51 @@ const placeEx = /\splaceholder\s?=\s?"(.*)"/g;
 const titleEx = /\stitle\s?=\s?"(.*)"/g;
 const idEx = /\sid\s?=\s?"(.*)"/g;
 
-function execRegEx(str,rex) {
+function execRegEx(str,rex) { // should not need this, but every other exec is failing
   let matches = rex.exec(str);
   if(matches===null) matches = rex.exec(str);
   return matches;
 }
 
-function getTemplates(directory, files, locale)
+/// Sorts an object recursively putting hashes at top of each sub hash
+function sortObject(object){
+  const sortedObj = {},
+    keys = Object.keys(object);
+
+  keys.sort(function(key1, key2){
+    key1 = key1.toLowerCase(), key2 = key2.toLowerCase();
+
+    if(typeof object[key1]!==typeof object[key2]) {
+      if (typeof object[key1] === 'object') return -1;
+      if (typeof object[key2] === 'object') return 1;
+    }
+    if(key1 < key2) return -1;
+    if(key1 > key2) return 1;
+    return 0;
+  });
+
+  for(let index in keys){
+    const key = keys[index];
+    if(typeof object[key] == 'object' && !(object[key] instanceof Array)){
+      sortedObj[key] = sortObject(object[key]);
+    } else {
+      sortedObj[key] = object[key];
+    }
+  }
+
+  return sortedObj;
+}
+
+function getTemplates(directory, files, tags, locale, localeCode)
 {
   files = files || [];
+  tags = tags || {};
   const filesInDirectory = fs.readdirSync(directory);
+
   for (const file of filesInDirectory) {
     const absolute = path.join(directory, file);
     if (fs.statSync(absolute).isDirectory()) {
-      getTemplates(absolute,files, locale);
+      getTemplates(absolute,files, tags, locale, localeCode);
     } else {
       if(absolute.indexOf('.git')>0) continue;
       let ext = path.extname(absolute).toLocaleLowerCase();
@@ -46,17 +78,20 @@ function getTemplates(directory, files, locale)
 
         let typ = tag[2];
         let name = tag[3];
+        if(name.indexOf(':')<0) { // make sure all are prefixed with the language code
+          name=localeCode+':'+name;
+        }
         if (typ === 'text') {
           let value = tag[4];
-          console.log({name: name, value: value});
+          tags.push({name: name, value: value});
         } else if (typ === 'title') {
           let title = execRegEx(matches[i],titleEx);
           if(title) title=title[1];
-          console.log({name: name, value: title});
+          tags.push({name: name, value: title});
         } else if (typ === 'placeholder') {
           let place = execRegEx(matches[i],placeEx);
           if(place) place=place[1];
-          console.log({name: name, value: place});
+          tags.push({name: name, value: place});
         } else {
           continue;
         }
@@ -93,7 +128,19 @@ class LocaleWebPackPlugin {
 
     let locale = require(this.options.locale);
 
-    console.log(getTemplates(process.cwd(), null, locale));
+    let tags = [];
+    console.log(getTemplates(process.cwd(), null, tags, locale, this.options.localeCode || 'en'));
+    console.log(tags);
+
+    for(let i=0;i<tags.length;i++) {
+      let parts = tags[i].split(':');
+      let lang = locale[parts[0]];
+      if(!lang) lang[parts[0]]={};
+    }
+
+    const data = JSON.stringify(sortObject(locale), null, 4);
+
+    fs.writeFileSync(this.options.locale.replace('.json','2.json'), data);
 
     compiler.hooks.done.tap('LocaleWebPackPlugin', compilation => {
       console.log('Touch the run hook asynchronously. ');

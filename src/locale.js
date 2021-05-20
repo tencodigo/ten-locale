@@ -79,10 +79,19 @@ class tenLocale {
     return this._get(name, def);
   }
 
-  _get(name,def, noReplace) {
-    let value = _get(tenLocale.instance._locale,name,def);
+  _get(name,def, noReplace, lang) {
+    lang = lang || tenLocale.instance._locale;
+    if (name.indexOf(":") >= 0) {
+      let parts = name.split(':');
+      name = parts[1];
+      if (parts[0] !== this._localeCode) { // check to see if we have that specific language text item
+        let lang2 = this._locales[parts[0]];
+        if (lang2 && _get(lang2,name)) lang=lang2;  // we do so switch to that language
+      }
+    }
+    let value = _get(lang, name, def);
     if(noReplace) return value;
-    return this._replace(value);
+    return this._replace(value, lang);
   }
 
   setup(options, isDefault) {
@@ -119,6 +128,7 @@ class tenLocale {
   }
 
   changeLocale(localeCode) {
+    this._localeCode = localeCode;
     _assign(this._locale,_clone(this._locales[localeCode]));
   }
 
@@ -128,7 +138,8 @@ class tenLocale {
     this._country = country;
   }
 
-  _replace(str){
+  _replace(str, lang) {
+    lang = lang || tenLocale.instance._locale;
     let typ = typeof str;
     if (typ === 'string'){
       let keys = str.match(/\{+(\w*)}+/g);
@@ -139,7 +150,7 @@ class tenLocale {
         let name = key.replace(/[{}]/g, '');
         if (name === undefined || name === '') continue;
 
-        let value = this._get(name,null,true);
+        let value = this._get(name,null,true, lang);
         if (value === undefined) continue;
         let re = new RegExp('\\{' + name + '\\}', 'g');
         str = str.replace(re, value);
@@ -149,12 +160,12 @@ class tenLocale {
     if (typ === 'object'){
       if(Array.isArray(str)) {
         for (let i = 0; i < str.length; i++){
-          str[i] = this._replace(str[i]);
+          str[i] = this._replace(str[i],lang);
         }
         return str;
       }
       Object.keys(str).forEach((key)=>{
-        this._replace(str[key]);
+        this._replace(str[key],lang);
       })
     }
     return str;
