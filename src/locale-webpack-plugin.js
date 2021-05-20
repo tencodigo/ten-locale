@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const _get = require('lodash/get');
+const _set = require('lodash/set');
 
 const templateRegex = /(<template(\s|\S)*?<\/template>)/g;
 const localeEx = /(<.*\sv-locale-(text|placeholder|title)\s?=\s?\"\'(.*)'".*?>)(.*)?<\/.*>?/g;
@@ -126,16 +127,22 @@ class LocaleWebPackPlugin {
     if(!this.options.locale && !fs.existsSync(this.options.locale))
       throw "locale option must be specified and point to a valid file";
 
-    let locale = require(this.options.locale);
+    let locale = require(this.options.locale).locale;
 
     let tags = [];
     console.log(getTemplates(process.cwd(), null, tags, locale, this.options.localeCode || 'en'));
     console.log(tags);
 
     for(let i=0;i<tags.length;i++) {
-      let parts = tags[i].split(':');
+      let parts = tags[i].name.split(':');
       let lang = locale[parts[0]];
-      if(!lang) lang[parts[0]]={};
+      if(!lang) locale[parts[0]]={};
+
+      if(_get(lang,parts[1])) {
+        continue;
+      } else {
+        _set(lang,'~'+parts[1],tags[i].value);
+      }
     }
 
     const data = JSON.stringify(sortObject(locale), null, 4);
