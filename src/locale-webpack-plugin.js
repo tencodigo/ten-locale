@@ -24,6 +24,9 @@ function sortObject(object){
   keys.sort(function(key1, key2){
     key1 = key1.toLowerCase(), key2 = key2.toLowerCase();
 
+    key1 = key1.replace('~','');
+    key2 = key2.replace('~','');
+
     if(typeof object[key1]!==typeof object[key2]) {
       if (typeof object[key1] === 'object') return -1;
       if (typeof object[key2] === 'object') return 1;
@@ -135,13 +138,19 @@ class LocaleWebPackPlugin {
 
     for(let i=0;i<tags.length;i++) {
       let parts = tags[i].name.split(':');
-      let lang = locale[parts[0]];
-      if(!lang) locale[parts[0]]={};
+      let localeCode = parts[0];
+      let name = parts[1];
+      let lang = locale[localeCode];
+      if(!lang) locale[localeCode]={};
 
-      if(_get(lang,parts[1])) {
+      if(_get(lang,name)) {
         continue;
       } else {
-        _set(lang,'~'+parts[1],tags[i].value);
+        parts = name.split('.');
+        let last = parts.length-1;
+        parts[last] = '~'+parts[last];
+        name = parts.join('.');
+        _set(lang,name,tags[i].value);
       }
     }
 
