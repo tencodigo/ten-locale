@@ -115,6 +115,19 @@ function mergeOptions(a, b)
   });
   return a;
 }
+
+function stripAutoText(a) {
+  let b = {};
+  Object.keys(a).forEach((key) => {
+    if(key.substr(0,1)==='~') return;
+    b[key] = a[key];
+    if(typeof b[key]==='object') {
+      b[key] = stripAutoText(a[key]);
+    }
+  });
+  return b;
+}
+
 class LocaleWebPackPlugin {
   constructor(options)
   {
@@ -124,17 +137,20 @@ class LocaleWebPackPlugin {
     mergeOptions(this.options,options);
   }
 
-  apply(compiler) {
-    console.log('before ---- ');
-
+  _rebuild() {
     if(!this.options.locale && !fs.existsSync(this.options.locale))
       throw "locale option must be specified and point to a valid file";
 
-    let locale = require(this.options.locale).locale;
+    let allText = fs.readFileSync(this.options.locale);
+    let all = JSON.parse(allText);
+    allText = JSON.stringify(sortObject(all), null, 4);
+    let locale = stripAutoText(all.locale);
 
     let tags = [];
-    console.log(getTemplates(process.cwd(), null, tags, locale, this.options.localeCode || 'en'));
-    console.log(tags);
+    let files = getTemplates(process.cwd(), null, tags, locale, this.options.localeCode || 'en');
+    if(this.options.debug) {
+      console.log(files,tags);
+    }
 
     for(let i=0;i<tags.length;i++) {
       let parts = tags[i].name.split(':');
@@ -154,12 +170,20 @@ class LocaleWebPackPlugin {
       }
     }
 
-    const data = JSON.stringify(sortObject(locale), null, 4);
+    all.locale = locale;
+    const data = JSON.stringify(sortObject(all), null, 4);
 
-    fs.writeFileSync(this.options.locale.replace('.json','2.json'), data);
+    if(allText===data) return;
 
+    let outputFile = this.options.outputFile;
+    if(!outputFile) outputFile = this.options.locale;
+    fs.writeFileSync(this.options.locale, data);
+  }
+
+  apply(compiler) {
+    this._rebuild();
     compiler.hooks.done.tap('LocaleWebPackPlugin', compilation => {
-      console.log('Touch the run hook asynchronously. ');
+      this._rebuild();
     });
   }
 }
