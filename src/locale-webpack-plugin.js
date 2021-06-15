@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const _get = require('lodash/get');
 const _set = require('lodash/set');
+let compiler = require('vue-template-compiler');
 
 const templateRegex = /(<template(\s|\S)*?<\/template>)/g;
 const localeEx = /(<.*\sv-locale-(text|placeholder|title)\s?=\s?\"\'(.*)'".*?>)(.*)?<\/.*>?/g;
@@ -135,6 +136,17 @@ class LocaleWebPackPlugin {
       localeCode:"en"
     };
     mergeOptions(this.options,options);
+  }
+
+  getCompiler(options) {
+    return {compile:function (v1,v2) {
+        console.log('here',v1,v2);
+        if(!compiler || !compiler.compile) console.log('no compile');
+        else console.log('has compile');
+        if(compiler.compile)
+          return compiler.compile(v1,v2);
+        return compiler;
+      }};
   }
 
   _rebuild() {
