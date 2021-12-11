@@ -1,6 +1,6 @@
 {
   "name": "ten-locale",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "main": "src/main.js",
   "description": "Framework to allow for locale differences in Vue",
   "license": "MIT",
