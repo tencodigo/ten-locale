@@ -1,5 +1,5 @@
 {
-  "name": "@ten/locale",
+  "name": "ten-locale",
   "version": "0.0.1",
   "main": "src/main.js",
   "description": "Framework to allow for locale differences in Vue",
