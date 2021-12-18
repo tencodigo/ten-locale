@@ -10,13 +10,13 @@ const __getText = function(element,binding,def) {
 };
 
 export default {
-  install: function(Vue,options,isDefault) {
-    if(Vue.provide) Vue.provide('$l',__locale);
-    else Object.defineProperty(Vue.prototype, '$l', { value:__locale });
+  install: (app, options) => {
+    if(options) __locale.setup(options);
+    app.config.globalProperties.$l = __locale;
+    app.$l = __locale;
+    app.provide('$l',__locale);
 
-    __locale.setup(options, isDefault);
-
-    Vue.directive('locale-text', {
+    app.directive('locale-text', {
       mounted: function (el,binding) {
         let text = __getText(el,binding,el.innerText);
         if(text) {
@@ -25,7 +25,7 @@ export default {
       }
     });
 
-    Vue.directive('locale-title', {
+    app.directive('locale-title', {
       mounted: function (el,binding) {
         let text = __getText(el,binding,el.title);
         if(text) {
@@ -34,7 +34,7 @@ export default {
       }
     });
 
-    Vue.directive('locale-placeholder', {
+    app.directive('locale-placeholder', {
       mounted: function (el,binding) {
         let text = __getText(el,binding,el.placeholder);
         if(text) {
@@ -43,7 +43,7 @@ export default {
       }
     });
 
-    Vue.config.globalProperties.$filters = _merge(Vue.config.globalProperties.$filters || {}, {
+    app.config.globalProperties.$filters = _merge(app.config.globalProperties.$filters || {}, {
       formatDate: function(value, form) {
         if (value) {
           if(value.toISOString) return LocalDate.parse(value.toISOString()).format(DateTimeFormatter.ofPattern(form || __locale.config().date.format))

@@ -7,16 +7,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - name: Use Node.js 12
+        uses: actions/setup-node@v1
         with:
           node-version: 12
           registry-url: https://registry.npmjs.org/
+      - name: Install Packages
+        uses: borales/actions-yarn@v2.3.0
+        with:
+          cmd: install
+      - name: Run Unit Tests
+        uses: borales/actions-yarn@v2.3.0
+        with:
+          cmd: test:unit
       - name: Conventional Changelog Action
         uses: cdotyone/conventional-changelog-action@v3.8.2
         with:
           github-token: ${{ github.token }}
           tag-prefix: 'v'
           release-count: '20'
-      - run: npm publish
+      - name: Publish
+        run: npm publish
         env:
-          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
+          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}

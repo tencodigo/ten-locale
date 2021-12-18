@@ -97,7 +97,7 @@ class tenLocale {
   setup(options, isDefault) {
     if(options) {
       if(options["~locale"]) {
-        this.setup({"locale":options["~locale"]});
+        this.setup({"locale":options["~locale"]},true);
       }
       if(options.locale) {
         Object.keys(options.locale).forEach((key)=> {
