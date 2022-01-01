@@ -1,5 +1,4 @@
-import 'js-joda-timezone';
-import { DateTimeFormatter, LocalDate, LocalDateTime } from 'js-joda'
+import { format, parseJSON } from 'date-fns';
 
 const _merge =  require('lodash/merge');
 const __locale = require('./locale.js').default;
@@ -44,24 +43,7 @@ export default {
     });
 
     app.config.globalProperties.$filters = _merge(app.config.globalProperties.$filters || {}, {
-      formatDate: function(value, form) {
-        if (value) {
-          if(value.toISOString) return LocalDate.parse(value.toISOString()).format(DateTimeFormatter.ofPattern(form || __locale.config().date.format))
-          return LocalDate.parse(value).format(DateTimeFormatter.ofPattern(form || __locale.country().date.format))
-        }
-      },
-      formatDateTime: function(value, form) {
-        if (value) {
-          if(value.toISOString) return LocalDateTime.parse(value.toISOString()).format(DateTimeFormatter.ofPattern(form || __locale.config().date.formatDateTime))
-          return LocalDateTime.parse(value).format(DateTimeFormatter.ofPattern(form || __locale.country().date.formatDateTime))
-        }
-      },
-      formatTime: function(value, form) {
-        if (value) {
-          if(value.toISOString) return LocalDateTime.parse(value.toISOString()).format(DateTimeFormatter.ofPattern(form || __locale.config().date.formatTime))
-          return LocalDateTime.parse(value).format(DateTimeFormatter.ofPattern(form || __locale.country().date.formatTime))
-        }
-      }
+      lformat: __locale.format
     });
   }
 }

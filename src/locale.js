@@ -2,6 +2,10 @@ const _get = require('lodash/get');
 const _mergeDash = require('lodash/mergeWith');
 const _assign = require('lodash/assign');
 const _clone = require('lodash/cloneDeep');
+const _masker = require('./mask/masker').default;
+const _tokens = require('./mask/tokens');
+import { format, parseJSON } from 'date-fns';
+
 const _merge = function (dest,src,srcIndex,all) {
   _mergeDash(dest,src,srcIndex,function (objValue, srcValue, key, object, source){
     const lead = key.substr(0,1);
@@ -23,52 +27,54 @@ class tenLocale {
       tenLocale.instance = this;
       this._defaults = {
         locales:{},
-        date:{
-          format:'MM-DD-YYYY',
-          formatDateTime:'MM-DD-YYYY hh:mmA z',
-          formatTime:'hh:mmA',
-          timeZone:'America/Chicago'
-        }
-      };
-      this._countries = {
-        US: {
+        country: {
           phone:'(###) ###-####',
-          postal:'#####-####',
-          currency:{
-            symbol:'$',
-            code:'USD'
+          date:{
+            format:'MM-dd-yyyy',
+            formatDateTime:'MM-dd-yyyy hh:mmaa',
+            formatTime:'hh:mm:ssaa',
+            timeZone:'America/Chicago'
           },
-        },
-        CA: {
-          phone:'(###) ###-####',
-          postal:'A#A #A#',
-          currency:{
-            symbol:'$',
-            code:'CAD'
+          currency: {
+            symbol: '$'
           }
         },
-        MX: {
-          phone:'###-###-####',
-          postal:'#####',
-          currency:{
-            symbol:'$',
-            code:'MXN'
+        countries: {
+          US: {
+            postal:'#####-####',
+            currency:{
+              locale:'en-US',
+              code:'USD',
+              minDecimals:2
+            },
+          },
+          CA: {
+            postal:'A#A #A#',
+            currency:{
+              code:'CAD'
+            }
+          },
+          MX: {
+            postal:'#####',
+            currency:{
+              code:'MXN'
+            }
           }
         }
       };
-      this._locale = {};
+      this._localeCode = 'es';
+      this._countryCode = 'US';
+      this._countries = {};
       this._locales = {};
-      this._country = {};
-      delete this._locale.locales;
     }
   }
 
   locale()  {
-    return tenLocale.instance._locale;
+    return tenLocale.instance._locales[this._localeCode];
   }
 
   country() {
-    return tenLocale.instance._country;
+    return tenLocale.instance._countries[this._localeCode];
   }
 
   defaults() {
@@ -80,36 +86,34 @@ class tenLocale {
   }
 
   _get(name,def, noReplace, lang) {
-    lang = lang || tenLocale.instance._locale;
-    if (name.indexOf(":") >= 0) {
-      let parts = name.split(':');
-      name = parts[1];
-      if (parts[0] !== this._localeCode) { // check to see if we have that specific language text item
-        let lang2 = this._locales[parts[0]];
-        if (lang2 && _get(lang2,name)) lang=lang2;  // we do so switch to that language
-      }
+    lang = lang || this._locales[this._localeCode];
+    let value = _get(lang, name, undefined);
+
+    if(value===undefined) {
+      value = _get(this._locales, name, def);
     }
-    let value = _get(lang, name, def);
+
     if(noReplace) return value;
     return this._replace(value, lang);
   }
 
   setup(options, isDefault) {
     if(options) {
-      if(options["~locale"]) {
-        this.setup({"locale":options["~locale"]},true);
+      if(options["~locales"]) {
+        this.setup({"locales":options["~locales"]},true);
       }
-      if(options.locale) {
-        Object.keys(options.locale).forEach((key)=> {
+      let locales=options.locales;
+      if(locales) {
+        Object.keys(locales).forEach((key)=> {
           if(key==='default') {
-            this.changeLocale(options.locale[key]);
+            this.changeLocale(locales[key]);
             return;
           }
-          if(key==='country') {
-            this.changeCountry(options.locale[key]);
+          if(key==='countries') {
+            _merge(this._countries,locales[key],undefined,true);
             return;
           }
-          this.set(options.locale[key],key,isDefault);
+          this.set(locales[key],key,isDefault);
         })
       }
     }
@@ -120,29 +124,44 @@ class tenLocale {
     this._defaults.locales[localeCode] = this._defaults.locales[localeCode] || {};
     if(isDefault) {
       _assign(this._defaults.locales[localeCode],_clone(localeStrings));
-      _merge(this._locale,localeStrings);
-    } else {
-      _assign(this._locale,localeStrings);
     }
     _merge(this._locales[localeCode],_clone(localeStrings));
   }
 
   changeLocale(localeCode) {
+    this._locales[localeCode]=this._locales[localeCode]||{};
     this._localeCode = localeCode;
-    _assign(this._locale,_clone(this._locales[localeCode]));
   }
 
-  changeCountry(countryCode) {
-    let country = _clone(this._countries[countryCode]);
-    _merge(country,this._defaults.date);
-    this._country = country;
+  getCountry(countryCode) {
+    countryCode = countryCode || this._countryCode;
+    let country = this._countries[countryCode]||{};
+    if(!country.__merged) {
+      _merge(country, this._defaults.country);
+      _merge(country, this._defaults.countries[countryCode]);
+      country.__merged = true;
+    }
+    this._countries[countryCode]=country;
+    return country;
+  }
+
+  getDateLocale(countryCode) {
+    countryCode = countryCode || this._countryCode;
+    let country = this.getCountry(countryCode);
+    if(country.date.locale) return country.date.locale;
+    country.date.locale = new Locale(this._localeCode, countryCode, this._localeCode);
+    return country.date.locale;
+  }
+
+  replace(str,hash) {
+    return this._replace(str,hash);
   }
 
   _replace(str, lang) {
     lang = lang || tenLocale.instance._locale;
     let typ = typeof str;
     if (typ === 'string'){
-      let keys = str.match(/\{+(\w*)}+/g);
+      let keys = str.match(/{+([a-zA-Z0-9\.\[\]]*)}+/g);
       if (keys === undefined || keys===null) return str;
 
       for (let i = 0; i < keys.length; i++){
@@ -169,6 +188,40 @@ class tenLocale {
       })
     }
     return str;
+  }
+
+  format(value,typ,countryCode) {
+    countryCode = countryCode || this._countryCode;
+    let country = this.getCountry(countryCode);
+
+    let dte = null;
+
+    switch (typ) {
+      case 't': //phone
+        value = _masker(value, country.phone, true, _tokens);
+        return value;
+      case 'c': //currency
+        value=Number(parseFloat(value)).toLocaleString(country.currency.locale, {style:"currency", currency:country.currency.code, minimumFractionDigits: country.currency.minDecimals});
+        return value;
+      case 'p': //postal
+        value = _masker(value, country.postal, true, _tokens);
+        return value;
+      case 'd': //date
+        if(value.toISOString===undefined) value = parseJSON(value);
+        value = format(value, country.date.format);
+        return value;
+      case 'dl': //date time
+        if(value.toISOString===undefined) value = parseJSON(value);
+        value = format(value, country.date.formatDateTime);
+        return value;
+      case 'dt': //time
+        if(value.toISOString===undefined) value = parseJSON(value);
+        value = format(value, country.date.formatTime);
+
+        return value;
+      default:
+        return value;
+    }
   }
 }
 
