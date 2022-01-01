@@ -1,3 +1,12 @@
+# [0.2.0](https://github.com/tencodigo/ten-locale/compare/v0.1.0...v0.2.0) (2021-12-18)
+
+
+### Features
+
+* add first unit test, make Vue 3.0 compatible ([b68d925](https://github.com/tencodigo/ten-locale/commit/b68d925eb255a6d94f42cd369c6b0774ca8378e1))
+
+
+
 # [0.1.0](https://github.com/tencodigo/ten-locale/compare/v0.0.0...v0.1.0) (2021-12-11)
 
 
