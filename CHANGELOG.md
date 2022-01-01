@@ -1,3 +1,17 @@
+# [0.3.0](https://github.com/tencodigo/ten-locale/compare/v0.2.0...v0.3.0) (2022-01-01)
+
+
+### Bug Fixes
+
+* test is in utc ([1d5cf08](https://github.com/tencodigo/ten-locale/commit/1d5cf0825505a607f6d89e63e86800248f145709))
+
+
+### Features
+
+* add locale formatting and unit tests ([b9401b6](https://github.com/tencodigo/ten-locale/commit/b9401b65391ed7e9e0d78143dc84ff9663fa6bcd))
+
+
+
 # [0.2.0](https://github.com/tencodigo/ten-locale/compare/v0.1.0...v0.2.0) (2021-12-18)
 
 
