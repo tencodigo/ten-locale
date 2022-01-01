@@ -67,9 +67,9 @@ describe('locale.js', () => {
     expect(app.$l.format('2022-04-28T12:34:00Z','d')).toMatch('04-28-2022');
   })
   it('format date and time', () => {
-    expect(app.$l.format('2011-12-03T10:15:30Z','dl')).toMatch('12-03-2011 04:15AM');
+    expect(app.$l.format('2011-12-03T10:15:30Z','dl')).toMatch('12-03-2011 10:15AM');
   })
   it('format time', () => {
-    expect(app.$l.format('2011-12-03T10:15:30Z','dt')).toMatch('04:15:30AM');
+    expect(app.$l.format('2011-12-03T10:15:30Z','dt')).toMatch('10:15:30AM');
   })
 })
